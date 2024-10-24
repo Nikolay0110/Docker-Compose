@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  kafka:
+    image: docker.io/bitnami/kafka:3.7
+    container_name: kafka
+    restart: unless-stopped
+    environment:
+      # Указывает, что этот контейнер будет выполнять роли брокера и контроллера.
+      KAFKA_CFG_PROCESS_ROLES: broker, controller
+      # Включает режим Kafka Raft(KRaft).
+      KAFKA_ENABLE_KRAFT: "true"
+      # Определяет участников кворума контроллеров.
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # Задержка перед первой переработкой группы консумеров в миллисекундах.
+      KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Интервал проверки времени хранения логов в миллисекундах.
+      KAFKA_CFG_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+      # Время хранения логов в часах перед их удалением.
+      KAFKA_CFG_LOG_RETENTION_HOURS: 168
+      # Минимальное количество реплик, которые должны быть доступны для записи в журнал состояния транзакций.
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Указывает количество потоков, выделенных для восстановления данных в каждом каталоге данных.
+      KAFKA_CFG_NUM_RECOVERY_THREADS_PER_DATA_DIR: 1
+      # Максимальный размер запроса, который может быть принят брокером.
+      KAFKA_CFG_SOCKET_REQUEST_MAX_BYTES: 104857600
+      # Размер буфера, используемого для отправки данных через сокеты.
+      KAFKA_CFG_SOCKET_SEND_BUFFER_BYTES: 102400
+      # Размер буфера для приема данных через сокеты.
+      KAFKA_CFG_SOCKET_RECEIVE_BUFFER_BYTES: 102400
+       # Фактор репликации для темы с оффсетами (по умолчанию 3).
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Фактор репликации для журнала состояния транзакций (по умолчанию 3).
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      # Количество партиций, создаваемых по умолчанию для новых тем.
+      KAFKA_CFG_NUM_PARTITIONS: 1
+      # Определяют, на каких портах Kafka будет слушать входящие запросы и как другие компоненты будут обращаться к этому брокеру.
+      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:9092, CONTROLLER://0.0.0.0:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # Уникальный идентификатор для этого узла в кластере.
+      KAFKA_CFG_NODE_ID: 1
+      # Используется для указания имен прослушивателей, которые будут использоваться для связи с контроллерами в кластере Kafka
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    networks:
+      - network # сеть будет называться kafka_network, идет авто подстановка имени сервиса
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+# Создаем целевую сеть, с указанием определенной подсети
+networks:
+  network: # сеть будет называться kafka_network, идет авто подстановка имени сервиса
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.248.0/24
+
+volumes:
+  kafka-data:
